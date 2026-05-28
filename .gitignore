@@ -1,0 +1,20 @@
+# Gradle
+**/build/
+**/.gradle/
+**/gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ
+**/.idea/
+**/*.iml
+**/*.iws
+**/*.ipr
+
+# Node
+**/node_modules/
+**/.angular/
+
+# Logs
+**/*.log
+
+# Environment
+**/.env

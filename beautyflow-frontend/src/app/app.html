@@ -1,0 +1,36 @@
+<div class="layout" *ngIf="mostrarLayout; else semLayout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">✂️</span>
+      <span>BeautyFlow</span>
+    </div>
+    <nav>
+      <a routerLink="/dashboard" routerLinkActive="active">
+        <span class="nav-icon">📊</span> Dashboard
+      </a>
+      <a routerLink="/agendamentos" routerLinkActive="active">
+        <span class="nav-icon">📅</span> Agendamentos
+      </a>
+      <a routerLink="/clientes" routerLinkActive="active">
+        <span class="nav-icon">👥</span> Clientes
+      </a>
+      <a routerLink="/profissionais" routerLinkActive="active">
+        <span class="nav-icon">💼</span> Profissionais
+      </a>
+      <a routerLink="/servicos" routerLinkActive="active">
+        <span class="nav-icon">✨</span> Serviços
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <span class="user-name">{{ nomeUsuario }}</span>
+      <button mat-stroked-button (click)="logout()">Sair</button>
+    </div>
+  </aside>
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>
+
+<ng-template #semLayout>
+  <router-outlet></router-outlet>
+</ng-template>

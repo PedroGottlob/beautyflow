@@ -1,0 +1,109 @@
+services:
+
+  mongodb:
+    image: mongo:7
+    container_name: beautyflow-mongodb
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - beautyflow-network
+
+  auth-service:
+    build:
+      context: ../beautyflow-auth-service
+    container_name: beautyflow-auth
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/beautyflow_auth
+      - BEAUTYFLOW_JWT_SECRET=beautyflow-super-secret-key-2024-change-in-production
+      - BEAUTYFLOW_JWT_EXPIRATION=86400000
+    depends_on:
+      - mongodb
+    networks:
+      - beautyflow-network
+
+  register-service:
+    build:
+      context: ../beautyflow-register-service
+    container_name: beautyflow-register
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/beautyflow_cadastro
+    depends_on:
+      - mongodb
+    networks:
+      - beautyflow-network
+
+  scheduling-service:
+    build:
+      context: ../beautyflow-scheduling-service
+    container_name: beautyflow-scheduling
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/beautyflow_agendamento
+    depends_on:
+      - mongodb
+    networks:
+      - beautyflow-network
+
+  api-gateway:
+    build:
+      context: ../BeautyFlowGateway
+    container_name: beautyflow-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_CLOUD_GATEWAY_ROUTES[0]_ID=register-clientes
+      - SPRING_CLOUD_GATEWAY_ROUTES[0]_URI=http://register-service:8081
+      - SPRING_CLOUD_GATEWAY_ROUTES[0]_PREDICATES[0]=Path=/clientes/**
+      - SPRING_CLOUD_GATEWAY_ROUTES[1]_ID=register-profissionais
+      - SPRING_CLOUD_GATEWAY_ROUTES[1]_URI=http://register-service:8081
+      - SPRING_CLOUD_GATEWAY_ROUTES[1]_PREDICATES[0]=Path=/profissionais/**
+      - SPRING_CLOUD_GATEWAY_ROUTES[2]_ID=scheduling-servicos
+      - SPRING_CLOUD_GATEWAY_ROUTES[2]_URI=http://scheduling-service:8082
+      - SPRING_CLOUD_GATEWAY_ROUTES[2]_PREDICATES[0]=Path=/servicos/**
+      - SPRING_CLOUD_GATEWAY_ROUTES[3]_ID=scheduling-agendamentos
+      - SPRING_CLOUD_GATEWAY_ROUTES[3]_URI=http://scheduling-service:8082
+      - SPRING_CLOUD_GATEWAY_ROUTES[3]_PREDICATES[0]=Path=/agendamentos/**
+      - SPRING_CLOUD_GATEWAY_ROUTES[4]_ID=auth-service
+      - SPRING_CLOUD_GATEWAY_ROUTES[4]_URI=http://auth-service:8083
+      - SPRING_CLOUD_GATEWAY_ROUTES[4]_PREDICATES[0]=Path=/auth/**
+      - BEAUTYFLOW_JWT_SECRET=beautyflow-super-secret-key-2024-change-in-production
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORS-CONFIGURATIONS_[/**]_ALLOWEDORIGINS[0]=http://localhost:4200
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORS-CONFIGURATIONS_[/**]_ALLOWEDMETHODS[0]=GET
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORS-CONFIGURATIONS_[/**]_ALLOWEDMETHODS[1]=POST
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORS-CONFIGURATIONS_[/**]_ALLOWEDMETHODS[2]=PUT
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORS-CONFIGURATIONS_[/**]_ALLOWEDMETHODS[3]=PATCH
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORS-CONFIGURATIONS_[/**]_ALLOWEDMETHODS[4]=DELETE
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORS-CONFIGURATIONS_[/**]_ALLOWEDMETHODS[5]=OPTIONS
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORS-CONFIGURATIONS_[/**]_ALLOWEDHEADERS[0]=*
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORS-CONFIGURATIONS_[/**]_ALLOWCREDENTIALS=true
+    depends_on:
+      - auth-service
+      - register-service
+      - scheduling-service
+    networks:
+      - beautyflow-network
+
+  frontend:
+    build:
+      context: ../beautyflow-frontend
+    container_name: beautyflow-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - beautyflow-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  beautyflow-network:
+    driver: bridge
